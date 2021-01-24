@@ -1,0 +1,6 @@
+name: ShopSystem
+version: ${project.version}
+main: hu.stan.shopsystem.ShopSystem
+api-version: 1.16
+authors: [ StanHUN ]
+description: Sign shop system for WorldCraft
