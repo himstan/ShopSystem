@@ -13,6 +13,7 @@ public final class ShopSystem extends DreamPlugin {
 
     private ModuleManager moduleManager;
     private ShopStorage shopStorage;
+    private PlayerStorage playerStorage;
     private ClaimController claimController;
 
     @Override
@@ -24,6 +25,7 @@ public final class ShopSystem extends DreamPlugin {
         init();
 
         shopStorage = new ShopStorage();
+        playerStorage = new PlayerStorage(this);
         claimController = new ClaimController();
 
         moduleManager = new ModuleManager(this);
@@ -55,7 +57,7 @@ public final class ShopSystem extends DreamPlugin {
     }
 
     public void init() {
-        TextUtil.prefix = getConfigManager().getSubConfig("config").getConfig().getString("messages.message_prefix", ChatColor.RED+ "" + ChatColor.BOLD + "SHOPS > " + ChatColor.RESET);
+        TextUtil.prefix = TextUtil.color(getConfigManager().getSubConfig("config").getConfig().getString("messages.message_prefix", "&4&lSHOPS > &r"));
     }
 
     @Override
@@ -73,5 +75,9 @@ public final class ShopSystem extends DreamPlugin {
 
     public ShopStorage getShopStorage() {
         return shopStorage;
+    }
+
+    public PlayerStorage getPlayerStorage() {
+        return playerStorage;
     }
 }

@@ -10,18 +10,16 @@ import java.util.List;
 
 public class ReloadCommand extends SubCommand {
 
-    private ShopSystem plugin;
-
     public ReloadCommand(String commandName) {
         super(commandName);
-        this.plugin = (ShopSystem) getPlugin();
     }
 
     @Override
     public void execute(Player player, String commandName, String label, String[] args) {
         long start = System.currentTimeMillis();
-        plugin.init();
+        ShopSystem plugin = (ShopSystem) getPlugin();
         plugin.getConfigManager().reloadConfigs();
+        plugin.init();
         plugin.getModuleManager().reloadModules();
         long end = System.currentTimeMillis();
         TextUtil.sendPrefixMessage(player, String.format("&6Plugin was reloaded in &f%d&6ms.", (end - start)));
