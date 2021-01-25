@@ -58,7 +58,7 @@ public class ShopHandlerModule extends Module {
             event.setCancelled(true);
             PlayerInventory playerInventory = player.getInventory();
             if (!playerInventory.contains(shopChest.getCurrency(), shopChest.getCurrencyCost())) {
-                player.sendRawMessage("You don't have enough to buy this!");
+                TextUtil.sendPrefixMessage(player, "&6You don't have enough currency to buy this item.");
                 return;
             }
             ItemUtils.removeItems(playerInventory, shopChest.getCurrency(), shopChest.getCurrencyCost());
