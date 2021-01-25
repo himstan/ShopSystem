@@ -6,15 +6,18 @@ import hu.stan.shopsystem.model.Result;
 import hu.stan.shopsystem.model.ShopChest;
 import hu.stan.shopsystem.model.ShopChestResult;
 import hu.stan.shopsystem.module.Module;
+import hu.stan.shopsystem.strifeplugin.utils.TextUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.*;
 
@@ -22,7 +25,9 @@ public class SignHandlerModule extends Module {
 
     private HashMap<UUID, Chest> creatingShop = new HashMap<>();
     private ClaimController claimController;
-    private String shopTag = "[Price]";
+
+    private String config_shopTag;
+
 
     public SignHandlerModule(ClaimController claimController) {
         this.claimController = claimController;
@@ -30,12 +35,19 @@ public class SignHandlerModule extends Module {
 
     @Override
     protected void onEnable() {
-
+        FileConfiguration config = plugin.getConfigManager().getSubConfig("signconfig").getConfig();
+        config_shopTag = config.getString("shop_sign.shop_tag");
     }
 
     @Override
     protected void onDisable() {
 
+    }
+
+    @EventHandler
+    private void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        creatingShop.remove(player.getUniqueId());
     }
 
     @EventHandler
@@ -66,7 +78,7 @@ public class SignHandlerModule extends Module {
     }
 
     private boolean isShopSign(SignChangeEvent event) {
-        return Objects.requireNonNull(event.getLine(0)).equalsIgnoreCase(shopTag);
+        return Objects.requireNonNull(event.getLine(0)).equalsIgnoreCase(config_shopTag);
     }
 
     private ShopChestResult createShopChest(Player shopCreator, Chest chest, Sign sign, SignChangeEvent event) {

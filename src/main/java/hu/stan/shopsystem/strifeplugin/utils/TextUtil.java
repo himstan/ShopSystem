@@ -14,7 +14,7 @@ public class TextUtil {
     private static final int CENTER_PX = 154;
     private static final Pattern HEX_PATTERN = Pattern.compile("#<([A-Fa-f0-9]){6}>");
     public static boolean HEX_USE = false;
-    public static String prefix = ChatColor.RED+ "" + ChatColor.BOLD + "SHOPS > " + ChatColor.RESET;
+    public static String prefix;
 
     public static void sendPrefixMessage(Player player, String message) {
         player.sendRawMessage(prefix + color(message));
@@ -61,9 +61,7 @@ public class TextUtil {
 
             } else if (previousCode) {
                 previousCode = false;
-                if (c == 'l' || c == 'L') {
-                    isBold = true;
-                } else isBold = false;
+                isBold = c == 'l' || c == 'L';
 
             } else {
                 DefaultFontInfo dFI = DefaultFontInfo.getDefaultFontInfo(c);

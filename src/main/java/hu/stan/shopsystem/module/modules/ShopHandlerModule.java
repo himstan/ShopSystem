@@ -1,5 +1,7 @@
 package hu.stan.shopsystem.module.modules;
 
+import hu.stan.shopsystem.ShopStorage;
+import hu.stan.shopsystem.ShopSystem;
 import hu.stan.shopsystem.controller.ClaimController;
 import hu.stan.shopsystem.events.ShopCreateAttemptEvent;
 import hu.stan.shopsystem.model.ShopChest;
@@ -9,6 +11,7 @@ import hu.stan.shopsystem.strifeplugin.utils.ItemUtils;
 import hu.stan.shopsystem.strifeplugin.utils.TextUtil;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -21,11 +24,14 @@ import java.util.Map;
 
 public class ShopHandlerModule extends Module {
 
-    private Map<Inventory, ShopChest> shopChestMap = new HashMap<>();
+    private String config_successTag;
+    private ShopStorage shopStorage;
 
     @Override
     protected void onEnable() {
-
+        FileConfiguration config = plugin.getConfigManager().getSubConfig("signconfig").getConfig();
+        config_successTag = TextUtil.color(config.getString("shop_sign.success_shop_tag"));
+        shopStorage = ((ShopSystem) plugin).getShopStorage();
     }
 
     @Override
@@ -37,8 +43,8 @@ public class ShopHandlerModule extends Module {
     private void onChestClick(InventoryClickEvent event) {
         Inventory inventory = event.getClickedInventory();
         Player player = (Player) event.getWhoClicked();
-        if (inventory != null && shopChestMap.containsKey(inventory)) {
-            ShopChest shopChest = shopChestMap.get(inventory);
+        if (inventory != null && shopStorage.isShop(inventory) && shopStorage.getShop(inventory).isPresent()) {
+            ShopChest shopChest = shopStorage.getShop(inventory).get();
             if (shopChest.getShopOwnerUUID().equals(player.getUniqueId())) return;
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
@@ -78,9 +84,9 @@ public class ShopHandlerModule extends Module {
     private void handleShop(ShopChest shopChest) {
         Player player = shopChest.getShopOwner().getPlayer();
         assert player != null;
-        shopChest.getShopSign().setLine(0, TextUtil.color("&0[&5Price&0]"));
+        shopChest.getShopSign().setLine(0, config_successTag);
         shopChest.getShopSign().setLine(3, player.getName());
         shopChest.getShopSign().update();
-        shopChestMap.put(shopChest.getShopChest().getBlockInventory(), shopChest);
+        shopStorage.saveShop(shopChest);
     }
 }

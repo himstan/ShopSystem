@@ -1,5 +1,6 @@
 package hu.stan.shopsystem.strifeplugin.commands;
 
+import hu.stan.shopsystem.strifeplugin.DreamPlugin;
 import hu.stan.shopsystem.strifeplugin.commands.subcommands.HelpCommand;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -15,14 +16,14 @@ import java.util.logging.Logger;
 
 public class MainCommand implements CommandExecutor, TabCompleter {
 
-    private JavaPlugin plugin;
+    private DreamPlugin plugin;
     private Logger logger;
     private SubCommand defaultCommand;
     private String mainCommandName;
     private Map<String, SubCommand> dreamCommands = new LinkedHashMap<>();
     private Map<String, SubCommand> dreamCommandAliases = new LinkedHashMap<>();
 
-    public MainCommand(JavaPlugin plugin, String mainCommandName) {
+    public MainCommand(DreamPlugin plugin, String mainCommandName) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
         this.mainCommandName = mainCommandName;
@@ -162,6 +163,10 @@ public class MainCommand implements CommandExecutor, TabCompleter {
 
     public String getMainCommandName() {
         return mainCommandName;
+    }
+
+    public DreamPlugin getPlugin() {
+        return plugin;
     }
 
     @Override

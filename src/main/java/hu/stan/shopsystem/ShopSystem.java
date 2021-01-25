@@ -5,19 +5,25 @@ import hu.stan.shopsystem.module.ModuleManager;
 import hu.stan.shopsystem.module.modules.ShopHandlerModule;
 import hu.stan.shopsystem.module.modules.SignHandlerModule;
 import hu.stan.shopsystem.strifeplugin.DreamPlugin;
-import hu.stan.shopsystem.strifeplugin.commands.subcommands.ShopClaimCommand;
-import hu.stan.shopsystem.strifeplugin.commands.subcommands.ShopInfoCommand;
-import hu.stan.shopsystem.strifeplugin.commands.subcommands.ShopListCommand;
-import hu.stan.shopsystem.strifeplugin.commands.subcommands.ShopUnclaimCommand;
+import hu.stan.shopsystem.strifeplugin.commands.subcommands.*;
+import hu.stan.shopsystem.strifeplugin.utils.TextUtil;
+import net.md_5.bungee.api.ChatColor;
 
 public final class ShopSystem extends DreamPlugin {
 
     private ModuleManager moduleManager;
+    private ShopStorage shopStorage;
     private ClaimController claimController;
 
     @Override
     public void onEnable() {
 
+        getConfigManager().addSubConfig("config");
+        getConfigManager().addSubConfig("signconfig");
+
+        init();
+
+        shopStorage = new ShopStorage();
         claimController = new ClaimController();
 
         moduleManager = new ModuleManager(this);
@@ -25,19 +31,31 @@ public final class ShopSystem extends DreamPlugin {
         moduleManager.registerModule(new ShopHandlerModule());
 
         registerMainCommand("shops").addSubCommands(
+                new ReloadCommand("reload")
+                        .setCommandUsage("Reloads the plugin")
+                        .setCommandUsage("reload")
+                        .setPermission("shops.reload"),
                 new ShopClaimCommand("claim", claimController)
-                    .setCommandDescription("Claims a free plot")
-                    .setCommandUsage("claim"),
+                        .setCommandDescription("Claims a free plot")
+                        .setCommandUsage("claim")
+                        .setPermission("shops.claim"),
                 new ShopUnclaimCommand("unclaim", claimController)
                         .setCommandDescription("Unclaims your plot")
-                        .setCommandUsage("unclaim"),
+                        .setCommandUsage("unclaim")
+                        .setPermission("shops.unclaim"),
                 new ShopInfoCommand("info")
-                    .setCommandDescription("Gives info about the plot you're standing on")
-                    .setCommandUsage("info"),
+                        .setCommandDescription("Gives info about the plot you're standing on")
+                        .setCommandUsage("info <PlayerName>")
+                        .setPermission("shops.info"),
                 new ShopListCommand("list")
-                    .setCommandDescription("Lists the shops")
-                    .setCommandUsage("list")
+                        .setCommandDescription("Lists the shops")
+                        .setCommandUsage("list <free>")
+                        .setPermission("shops.list")
         );
+    }
+
+    public void init() {
+        TextUtil.prefix = getConfigManager().getSubConfig("config").getConfig().getString("messages.message_prefix", ChatColor.RED+ "" + ChatColor.BOLD + "SHOPS > " + ChatColor.RESET);
     }
 
     @Override
@@ -51,5 +69,9 @@ public final class ShopSystem extends DreamPlugin {
 
     public ClaimController getClaimController() {
         return claimController;
+    }
+
+    public ShopStorage getShopStorage() {
+        return shopStorage;
     }
 }

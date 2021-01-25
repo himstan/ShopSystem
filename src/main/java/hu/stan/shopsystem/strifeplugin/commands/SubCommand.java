@@ -1,5 +1,6 @@
 package hu.stan.shopsystem.strifeplugin.commands;
 
+import hu.stan.shopsystem.strifeplugin.DreamPlugin;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 
@@ -91,4 +92,6 @@ public abstract class SubCommand {
     public Permission getPermission() {
         return permission;
     }
+
+    public DreamPlugin getPlugin() {return mainCommand.getPlugin();}
 }
