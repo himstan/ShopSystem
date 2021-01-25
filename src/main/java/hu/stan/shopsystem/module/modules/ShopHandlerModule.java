@@ -10,17 +10,24 @@ import hu.stan.shopsystem.module.Module;
 import hu.stan.shopsystem.strifeplugin.utils.ItemUtils;
 import hu.stan.shopsystem.strifeplugin.utils.TextUtil;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.w3c.dom.Text;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 public class ShopHandlerModule extends Module {
 
@@ -79,6 +86,27 @@ public class ShopHandlerModule extends Module {
                 TextUtil.sendPrefixMessage(shopCreator, "&6Invalid currency!");
                 break;
         }
+    }
+
+    @EventHandler
+    private void onShopBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        Block brokenBlock = event.getBlock();
+
+        Location brokenBlockLoc = brokenBlock.getLocation();
+        Optional<ShopChest> shopChestOptional = shopStorage.getShop(brokenBlockLoc);
+
+        shopChestOptional.ifPresent(shopChest -> {
+            TextUtil.sendPrefixMessage(player, "&6You removed a shop.");
+            UUID ownerID = shopChest.getShopOwnerUUID();
+            if (!player.getUniqueId().equals(ownerID)) {
+                Player ownerPlayer = Bukkit.getPlayer(ownerID);
+                if (ownerPlayer != null) {
+                    TextUtil.sendPrefixMessage(ownerPlayer, "&6One of your shops have been removed by &f" + player.getName());
+                }
+            }
+            shopStorage.removeShop(shopChest);
+        });
     }
 
     private void handleShop(ShopChest shopChest) {
