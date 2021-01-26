@@ -8,6 +8,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Optional;
+
 public class PlayerDataHandler extends Module {
 
     private PlayerStorage playerStorage;
@@ -18,14 +22,14 @@ public class PlayerDataHandler extends Module {
 
     @Override
     protected void onEnable() {
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            addPlayer(player);
-        }
+        playerStorage.loadPlayers();
     }
 
     @Override
     protected void onDisable() {
-        for (PlayerData playerData : playerStorage.getPlayerDatas()) {
+        playerStorage.savePlayers();
+        Collection<PlayerData> playerDatas = new ArrayList<>(playerStorage.getPlayerDatas());
+        for (PlayerData playerData : playerDatas) {
             playerStorage.removePlayerData(playerData.getPlayerUUID());
         }
     }
@@ -33,13 +37,22 @@ public class PlayerDataHandler extends Module {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        addPlayer(player);
+        Optional<PlayerData> optionalPlayerData = playerStorage.getPlayerData(player);
+        if (!optionalPlayerData.isPresent()) {
+            addPlayer(player);
+        }
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        removePlayer(player);
+        Optional<PlayerData> optionalPlayerData = playerStorage.getPlayerData(player);
+        if (optionalPlayerData.isPresent()) {
+            PlayerData playerData = optionalPlayerData.get();
+            if (!playerData.hasShopClaim()) {
+                removePlayer(player);
+            }
+        }
     }
 
     private void addPlayer(Player player) {

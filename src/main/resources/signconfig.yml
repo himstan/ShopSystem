@@ -1,3 +1,4 @@
 shop_sign:
+  shop_world: "world"
   shop_tag: "[Price]"
-  success_shop_tag: "&0[&5Price&0]"
+  success_shop_tag: "&0[&fPrice&0]"

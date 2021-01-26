@@ -25,12 +25,8 @@ public class ShopUnclaimCommand extends SubCommand {
 
     @Override
     public void execute(Player player, String commandName, String label, String[] args) {
-
-        PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
         if (claimController.getClaimCount(player) > 0) {
-            for (Claim claim : claimController.getSubDivisons(playerData.getClaims())) {
-                claimController.removeClaim(player, claim);
-            }
+            claimController.removeClaim(player);
             TextUtil.sendPrefixMessage(player, "&3You unclaimed your subdivision!");
         } else {
             TextUtil.sendPrefixMessage(player, "&6You don't have a subdivision.");

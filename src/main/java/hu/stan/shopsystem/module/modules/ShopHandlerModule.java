@@ -1,19 +1,20 @@
 package hu.stan.shopsystem.module.modules;
 
+import hu.stan.shopsystem.PlayerStorage;
 import hu.stan.shopsystem.ShopStorage;
 import hu.stan.shopsystem.ShopSystem;
-import hu.stan.shopsystem.controller.ClaimController;
 import hu.stan.shopsystem.events.ShopCreateAttemptEvent;
 import hu.stan.shopsystem.model.ShopChest;
 import hu.stan.shopsystem.model.ShopChestResult;
 import hu.stan.shopsystem.module.Module;
 import hu.stan.shopsystem.strifeplugin.utils.ItemUtils;
 import hu.stan.shopsystem.strifeplugin.utils.TextUtil;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,28 +23,51 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.w3c.dom.Text;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
 public class ShopHandlerModule extends Module {
 
     private String config_successTag;
+    private String config_shopWorld;
+    private boolean config_warningEnabled;
+    private int config_warningInterval;
+    private String config_warningMessage;
+    private int warningTaskID = -1;
+
+    private PlayerStorage playerStorage;
     private ShopStorage shopStorage;
+
+    public ShopHandlerModule(PlayerStorage playerStorage, ShopStorage shopStorage) {
+        this.playerStorage = playerStorage;
+        this.shopStorage = shopStorage;
+    }
 
     @Override
     protected void onEnable() {
         FileConfiguration config = plugin.getConfigManager().getSubConfig("signconfig").getConfig();
+        FileConfiguration shopConfig = plugin.getConfigManager().getSubConfig("config").getConfig();
         config_successTag = TextUtil.color(config.getString("shop_sign.success_shop_tag"));
-        shopStorage = ((ShopSystem) plugin).getShopStorage();
+        config_shopWorld = config.getString("shop_sign.shop_world", "world");
+        config_warningEnabled = shopConfig.getBoolean("messages.warning_message.enabled", false);
+        config_warningMessage = shopConfig.getString("messages.warning_message.warning_message", "");
+        config_warningInterval = shopConfig.getInt("messages.warning_message.warning_message_interval", 500);
+        shopStorage.loadChests();
+        setShopTags();
+        plugin.getLogger().info("Loaded " + shopStorage.getShopChests().size() + " shop chests!");
+        if (config_warningEnabled) {
+            startWarningTask();
+        }
     }
 
     @Override
     protected void onDisable() {
-
+        stopWarningTask();
+        plugin.getLogger().info("Saving " + shopStorage.getShopChests().size() + " shop chests...");
+        shopStorage.saveChests();
     }
 
     @EventHandler
@@ -85,6 +109,12 @@ public class ShopHandlerModule extends Module {
             case INVALID_CURRENCY:
                 TextUtil.sendPrefixMessage(shopCreator, "&6Invalid currency!");
                 break;
+            case NOT_SHOP_WORLD:
+                TextUtil.sendPrefixMessage(shopCreator, "&6Not in shop world!");
+                break;
+            case DOUBLE_CHEST:
+                TextUtil.sendPrefixMessage(shopCreator, "&6You can only create shops on single chests!");
+                break;
         }
     }
 
@@ -116,5 +146,48 @@ public class ShopHandlerModule extends Module {
         shopChest.getShopSign().setLine(3, player.getName());
         shopChest.getShopSign().update();
         shopStorage.saveShop(shopChest);
+        TextUtil.sendPrefixMessage(player, "&3Your shop was created successfully!");
     }
+
+    private void setShopTags() {
+        for (ShopChest shopChest : shopStorage.getShopChests()) {
+            Sign chestSign = shopChest.getShopSign();
+            if (chestSign != null) {
+                chestSign.setLine(0, config_successTag);
+                chestSign.update();
+            }
+        }
+    }
+
+    private void startWarningTask() {
+        if (!isWarningTaskRunnning()) {
+            long interval = this.config_warningInterval * 20L;
+            this.warningTaskID = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+                World world = plugin.getServer().getWorld(config_shopWorld);
+                if (world == null) return;
+
+                List<Player> playerList = world.getPlayers();
+
+                for (Player player : playerList) {
+                    playerStorage.ifExists(player, playerData -> {
+                        if (playerData.hasShopClaim()) {
+                            TextUtil.sendPrefixMessage(player, config_warningMessage);
+                        }
+                    });
+                }
+            }, interval, interval);
+        }
+    }
+
+    private void stopWarningTask() {
+        if (isWarningTaskRunnning()) {
+            plugin.getServer().getScheduler().cancelTask(this.warningTaskID);
+            this.warningTaskID = -1;
+        }
+    }
+
+    private boolean isWarningTaskRunnning() {
+        return this.warningTaskID != -1;
+    }
+
 }

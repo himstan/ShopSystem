@@ -1,2 +1,6 @@
 messages:
   message_prefix: "&4&lSHOPS > &r"
+  warning_message:
+    enabled: true
+    warning_message: "&6Your shop will be removed if its inactive for 21 days!"
+    warning_message_interval: 300

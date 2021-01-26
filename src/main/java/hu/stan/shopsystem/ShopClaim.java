@@ -57,6 +57,10 @@ public class ShopClaim {
         return claimOwner;
     }
 
+    public long getClaimID() {
+        return claimID;
+    }
+
     public Claim getClaim() {
         DataStore dataStore = GriefPrevention.instance.dataStore;
         return dataStore.getClaim(claimID);

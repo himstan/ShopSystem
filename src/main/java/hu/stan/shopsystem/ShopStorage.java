@@ -1,14 +1,22 @@
 package hu.stan.shopsystem;
 
 import hu.stan.shopsystem.model.ShopChest;
+import hu.stan.shopsystem.strifeplugin.DreamPlugin;
 import org.bukkit.Location;
 import org.bukkit.inventory.Inventory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.io.IOException;
+import java.util.*;
 
 public class ShopStorage {
+
+    private DreamPlugin plugin;
+    private ShopStorageManager shopStorageManager;
+
+    public ShopStorage(DreamPlugin plugin) {
+        this.plugin = plugin;
+        this.shopStorageManager = new ShopStorageManager(plugin, this);
+    }
 
     private Map<Location, ShopChest> signToShopMap = new HashMap<>();
     private Map<Location, ShopChest> chestToShopMap = new HashMap<>();
@@ -76,4 +84,28 @@ public class ShopStorage {
         return chestToShopMap.remove(location) != null;
     }
 
+    public Collection<ShopChest> getShopChests() {
+        return chestToShopMap.values();
+    }
+
+    public ShopStorageManager getShopStorageManager() {
+        return shopStorageManager;
+    }
+
+    public void loadChests() {
+        List<ShopChest> shopChests = shopStorageManager.loadShopChests();
+        for (ShopChest shopChest : shopChests) {
+            saveShop(shopChest);
+        }
+    }
+
+    public void saveChests() {
+        try {
+            shopStorageManager.saveShopChests();
+            chestToShopMap.clear();
+            signToShopMap.clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

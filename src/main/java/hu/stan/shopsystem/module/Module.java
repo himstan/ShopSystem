@@ -32,7 +32,7 @@ public abstract class Module implements Listener {
         this.isEnabled = enabled;
     }
 
-    public  <T extends Module> T convertToSubModule(Class<T> tClass) {
+    public <T extends Module> T convertToSubModule(Class<T> tClass) {
         T result = null;
         if (this.getClass() == tClass) result = (T) this;
         return result;

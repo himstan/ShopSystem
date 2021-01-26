@@ -17,18 +17,13 @@ import java.util.function.Consumer;
 public class PlayerStorage {
 
     private DreamPlugin plugin;
+    private PlayerStorageManager playerStorageManager;
     private Map<UUID, PlayerData> playerDataMap = new HashMap<>();
-    private File dataFolder;
+    private Map<String, UUID> nameToID = new HashMap<>();
 
     public PlayerStorage(DreamPlugin plugin) {
         this.plugin = plugin;
-        handleDataFolder();
-    }
-
-    private void handleDataFolder() {
-        File dataFolder = new File(plugin.getDataFolder(), "playerData");
-        if (!dataFolder.exists()) dataFolder.mkdir();
-        this.dataFolder = dataFolder;
+        this.playerStorageManager = new PlayerStorageManager(plugin, this);
     }
 
     public Optional<PlayerData> getPlayerData(Player player) {
@@ -45,10 +40,10 @@ public class PlayerStorage {
     }
 
     public Optional<PlayerData> getPlayerData(String playerName) {
-        Player player = Bukkit.getPlayer(playerName);
         UUID playerID = null;
-        if (player != null) {
-            playerID = player.getUniqueId();
+        playerName = playerName.toLowerCase();
+        if (nameToID.containsKey(playerName)) {
+            playerID = nameToID.get(playerName);
         }
         return getPlayerData(playerID);
     }
@@ -63,23 +58,45 @@ public class PlayerStorage {
 
     public void addPlayerData(PlayerData playerData) {
         playerDataMap.put(playerData.getPlayerUUID(), playerData);
+        nameToID.put(playerData.getPlayerName().toLowerCase(), playerData.getPlayerUUID());
     }
 
     public void removePlayerData(UUID playerID) {
         playerDataMap.remove(playerID);
+        nameToID.remove(Bukkit.getOfflinePlayer(playerID).getName().toLowerCase());
     }
 
     public void removePlayerData(Player player) {
         playerDataMap.remove(player.getUniqueId());
-    }
-
-    public void savePlayer(PlayerData playerData) throws IOException {
-        Gson gson = new Gson();
-        gson.toJson(playerData, new FileWriter(new File(dataFolder, playerData.getPlayerUUID() + ".json")));
+        nameToID.remove(player.getName().toLowerCase());
     }
 
     public Collection<PlayerData> getPlayerDatas() {
         return playerDataMap.values();
     }
 
+    public void loadPlayers() {
+        List<PlayerData> playerDataList = playerStorageManager.loadPlayers();
+        for (PlayerData playerData : playerDataList) {
+            addPlayerData(playerData);
+        }
+    }
+
+    public void savePlayers() {
+        playerStorageManager.savePlayers();
+    }
+
+    public void savePlayer(Player player) {
+        ifExists(player, playerData -> {
+            try {
+                playerStorageManager.savePlayer(playerData);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public PlayerStorageManager getPlayerStorageManager() {
+        return playerStorageManager;
+    }
 }

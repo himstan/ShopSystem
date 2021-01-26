@@ -1,5 +1,6 @@
 package hu.stan.shopsystem.module.modules;
 
+import hu.stan.shopsystem.MaterialAdapter;
 import hu.stan.shopsystem.controller.ClaimController;
 import hu.stan.shopsystem.events.ShopCreateAttemptEvent;
 import hu.stan.shopsystem.model.Result;
@@ -18,6 +19,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.DoubleChestInventory;
+import org.bukkit.inventory.Inventory;
 
 import java.util.*;
 
@@ -27,6 +30,7 @@ public class SignHandlerModule extends Module {
     private ClaimController claimController;
 
     private String config_shopTag;
+    private String config_shopWorld;
 
 
     public SignHandlerModule(ClaimController claimController) {
@@ -37,6 +41,7 @@ public class SignHandlerModule extends Module {
     protected void onEnable() {
         FileConfiguration config = plugin.getConfigManager().getSubConfig("signconfig").getConfig();
         config_shopTag = config.getString("shop_sign.shop_tag");
+        config_shopWorld = config.getString("shop_sign.shop_world", "world");
     }
 
     @Override
@@ -93,6 +98,14 @@ public class SignHandlerModule extends Module {
             shopChestResult.setResult(Result.OUT_OF_SUBDIVISION);
         }
 
+        if (!isInShopWorld(shopCreator)) {
+            shopChestResult.setResult(Result.NOT_SHOP_WORLD);
+        }
+
+        if (isDoubleChest(chest)) {
+            shopChestResult.setResult(Result.DOUBLE_CHEST);
+        }
+
         if (shopChestResult.getResult() == Result.SUCCESS) {
             int amount = 1;
             try {
@@ -107,7 +120,7 @@ public class SignHandlerModule extends Module {
                 shopChestResult.setResult(Result.INVALID_AMOUNT);
             }
 
-            Material material = Material.getMaterial(currencyLine);
+            Material material = MaterialAdapter.getMaterial(currencyLine);
 
             if (material == null) {
                 event.setLine(2, "INVALID");
@@ -115,7 +128,7 @@ public class SignHandlerModule extends Module {
             }
             if (shopChestResult.getResult() == Result.SUCCESS) {
                 setSignLines(sign, event.getLines());
-                shopChestResult.setShopChest(new ShopChest(shopCreator.getUniqueId(), chest.getLocation(), sign, chest, material, amount));
+                shopChestResult.setShopChest(new ShopChest(shopCreator.getUniqueId(), sign, chest, material, amount));
             }
         }
 
@@ -127,5 +140,14 @@ public class SignHandlerModule extends Module {
             sign.setLine(i, lines[i]);
         }
         sign.update();
+    }
+
+    private boolean isInShopWorld(Player player) {
+        return (player.getLocation().getWorld().getName().equalsIgnoreCase(config_shopWorld));
+    }
+
+    private boolean isDoubleChest(Chest chest) {
+        Inventory inventory = chest.getInventory();
+        return inventory instanceof DoubleChestInventory;
     }
 }

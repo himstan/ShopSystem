@@ -41,16 +41,13 @@ public class SetShopCommand extends SubCommand {
             return;
         }
 
-        if (!claimController.isStandingInSubDiv(player)) {
-            TextUtil.sendPrefixMessage(player, "&6You are not standing in a subdivision.");
-            return;
-        }
+        if (claimController.isStandingInSubDiv(player)) {
+            Claim claim = claimController.getStandingSubDiv(player);
 
-        Claim claim = claimController.getStandingSubDiv(player);
-
-        if (!claimController.hasClaim(player, claim)) {
-            TextUtil.sendPrefixMessage(player, "&6You don't own this subdivision.");
-            return;
+            if (!claimController.hasClaim(player, claim)) {
+                TextUtil.sendPrefixMessage(player, "&6You don't own this subdivision.");
+                return;
+            }
         }
 
         ShopClaim shopClaim = playerData.getShopClaim();

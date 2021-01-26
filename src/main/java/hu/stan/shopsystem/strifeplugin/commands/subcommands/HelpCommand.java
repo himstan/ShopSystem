@@ -50,7 +50,7 @@ public class HelpCommand extends SubCommand {
     }
 
     private int calculateMaxPages(Player player) {
-        return mainCommand.getPlayerCommands(player).size() / commandsPerPage;
+        return (int) Math.ceil((double) mainCommand.getPlayerCommands(player).size() / commandsPerPage);
     }
 
     private void printCommands(Player player, String label, int currentPage) {
@@ -84,7 +84,7 @@ public class HelpCommand extends SubCommand {
     }
 
     private String getHeaderLine() {
-        String headerText = mainCommand.getMainCommandName() + " HELP";
+        String headerText = capitalize(mainCommand.getMainCommandName()) + " HELP";
         int headerTextLength = maxTextLength - headerText.length();
         return ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + StringUtils.repeat(" ", headerTextLength / 2) + ChatColor.RESET + ChatColor.DARK_RED + "" + ChatColor.BOLD + headerText + ChatColor.RESET + "" + ChatColor.DARK_GRAY + ChatColor.STRIKETHROUGH + StringUtils.repeat(" ", headerTextLength / 2);
     }
@@ -93,5 +93,11 @@ public class HelpCommand extends SubCommand {
         String footerPage = "(" + currentPage + "/" + maxPage + ")";
         int footerPageLength = maxTextLength - footerPage.length() + 8;
         return ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + StringUtils.repeat(" ", footerPageLength / 2) + ChatColor.RESET + ChatColor.DARK_RED + "" + ChatColor.BOLD + footerPage + ChatColor.RESET + "" + ChatColor.DARK_GRAY + ChatColor.STRIKETHROUGH + StringUtils.repeat(" ", footerPageLength / 2);
+    }
+
+    public static String capitalize(String str)
+    {
+        if(str == null) return str;
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }

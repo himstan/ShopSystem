@@ -1,24 +1,30 @@
 package hu.stan.shopsystem.strifeplugin.commands.subcommands;
 
+import hu.stan.shopsystem.PlayerData;
+import hu.stan.shopsystem.PlayerStorage;
+import hu.stan.shopsystem.ShopClaim;
+import hu.stan.shopsystem.model.ShopChest;
 import hu.stan.shopsystem.strifeplugin.commands.SubCommand;
+import hu.stan.shopsystem.strifeplugin.utils.OnlineTime;
 import hu.stan.shopsystem.strifeplugin.utils.TextUtil;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.DataStore;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.PlayerData;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class ShopInfoCommand extends SubCommand {
 
-    public ShopInfoCommand(String commandName) {
+    private PlayerStorage playerStorage;
+
+    public ShopInfoCommand(String commandName, PlayerStorage playerStorage) {
         super(commandName);
+        this.playerStorage = playerStorage;
     }
 
     @Override
@@ -27,18 +33,21 @@ public class ShopInfoCommand extends SubCommand {
         Claim claim;
         if (args.length > 0) {
             String playerName = args[0];
-            Player shopOwner = Bukkit.getPlayer(playerName);
-            if (shopOwner == null) {
-                TextUtil.sendPrefixMessage(player, "&6Couldn't find a player with this name.");
-                return;
-            }
-            UUID shopOwnerID = shopOwner.getUniqueId();
-            PlayerData playerData = dataStore.getPlayerData(shopOwnerID);
-            for (Claim c : playerData.getClaims()) {
-                if (c.parent != null) {
-                    printClaimInfo(player, c);
+            Optional<PlayerData> playerDataOptional = playerStorage.getPlayerData(playerName);
+            if (playerDataOptional.isPresent()) {
+                PlayerData playerData = playerDataOptional.get();
+                if (playerData.hasShopClaim()) {
+                    UUID shopOwnerID = playerData.getPlayerUUID();
+                    me.ryanhamshire.GriefPrevention.PlayerData playerD = dataStore.getPlayerData(shopOwnerID);
+                    for (Claim c : playerD.getClaims()) {
+                        if (c.parent != null) {
+                            printClaimInfo(player, c);
+                        }
+                    }
+                    return;
                 }
             }
+            TextUtil.sendPrefixMessage(player, "&6This player doesn't have a shop.");
         } else {
             claim = dataStore.getClaimAt(player.getLocation(), false, null);
             if (claim == null || claim.parent == null) {
@@ -50,20 +59,29 @@ public class ShopInfoCommand extends SubCommand {
     }
 
     private void printClaimInfo(Player player, Claim claim) {
-            String ownerName = "FREE!";
-
-            if (claim.ownerID != null) {
-                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(claim.ownerID);
-                ownerName = offlinePlayer.getName();
+            UUID claimOwner = claim.ownerID;
+            World world = claim.getGreaterBoundaryCorner().getWorld();
+            if (claimOwner != null) {
+                Optional<PlayerData> optionalPlayerData = playerStorage.getPlayerData(claimOwner);
+                if (optionalPlayerData.isPresent()) {
+                    PlayerData playerData = optionalPlayerData.get();
+                    if (playerData.hasShopClaim()) {
+                        ShopClaim shopClaim = playerData.getShopClaim();
+                        OnlineTime onlineTime = new OnlineTime((int) ((System.currentTimeMillis() - shopClaim.getLastEdit()) / 1000));
+                        TextUtil.sendPrefixMessage(player, "&6Plot information:");
+                        TextUtil.sendPrefixMessage(player, "&6Area: &a" + TextUtil.capitalize(world.getName()));
+                        TextUtil.sendPrefixMessage(player, String.format("&6Owner: &a%s", playerData.getPlayerName()));
+                        TextUtil.sendPrefixMessage(player, String.format("&6Last edit: &a%dd %dh %dm %ds", onlineTime.getDays(), onlineTime.getHours(), onlineTime.getMinutes(), onlineTime.getSeconds()));
+                    } else {
+                        TextUtil.sendPrefixMessage(player, "&6This player doesn't have a shop.");
+                    }
+                }
+            } else {
+                TextUtil.sendPrefixMessage(player, "&6Plot information:");
+                TextUtil.sendPrefixMessage(player, "&6Area: &a" + TextUtil.capitalize(world.getName()));
+                TextUtil.sendPrefixMessage(player, "&6Owner: &aFREE!");
+                TextUtil.sendPrefixMessage(player, "&6Last edit: &a0d 0h");
             }
-
-            Location lesserCorner = claim.getLesserBoundaryCorner();
-            Location greaterCorner = claim.getGreaterBoundaryCorner();
-
-            int x = (lesserCorner.getBlockX() + greaterCorner.getBlockX()) / 2;
-            int z = (lesserCorner.getBlockZ() + greaterCorner.getBlockZ()) / 2;
-
-            TextUtil.sendPrefixMessage(player, String.format("&eOWNER: &3%s &eX: &3%d &eZ: &3%d", ownerName, x, z));
     }
 
     @Override

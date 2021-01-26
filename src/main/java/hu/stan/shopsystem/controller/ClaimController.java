@@ -32,25 +32,40 @@ public class ClaimController implements IClaimController {
 
     @Override
     public void removeClaim(Player player, Claim claim) {
+        Optional<PlayerData> playerDataOptional = playerStorage.getPlayerData(claim.ownerID);
+        playerDataOptional.ifPresent(PlayerData::removeShopClaim);
         claim.ownerID = null;
-        playerStorage.ifExists(player, playerData -> {
-            playerData.removeShopClaim();
-        });
         dataStore.saveClaim(claim);
+        System.out.println("removing owner's " + claim.getID());
+    }
+
+    public void removeClaim(Player player) {
+        playerStorage.ifExists(player, playerData -> {
+            if (playerData.hasShopClaim()) {
+                long claimID = playerData.getShopClaim().getClaimID();
+                Claim claim = getClaim(claimID);
+                if (claim != null) {
+                    System.out.println(claimID);
+                    removeClaim(player, claim);
+                }
+                playerData.removeShopClaim();
+            }
+        });
     }
 
     @Override
     public boolean hasClaim(Player player, Claim claim) {
         Optional<PlayerData> playerData = playerStorage.getPlayerData(player);
-        boolean playerDataHasClaim = playerData.isPresent() && playerData.get().hasShopClaim() && playerData.get().getShopClaim().getClaim().getID().equals(claim.getID());
+        boolean playerDataHasClaim = playerData.isPresent() && playerData.get().hasShopClaim() && playerData.get().getShopClaim().getClaimID() == claim.getID();
         return claim.ownerID != null && player.getUniqueId().equals(claim.ownerID) && playerDataHasClaim;
     }
 
     @Override
     public int getClaimCount(Player player) {
-        AtomicInteger count = new AtomicInteger();
+        AtomicInteger count = new AtomicInteger(0);
         playerStorage.ifExists(player, playerData -> {
             if (playerData.hasShopClaim()) {
+                System.out.println(playerData.getPlayerName() + " has a shop");
                 count.set(1);
             }
         });
@@ -61,9 +76,9 @@ public class ClaimController implements IClaimController {
     public void addClaim(Player player, Claim claim) {
         playerStorage.ifExists(player, playerData -> {
             playerData.setShopClaim(new ShopClaim(player.getUniqueId(), claim.getID()));
+            claim.ownerID = player.getUniqueId();
+            dataStore.saveClaim(claim);
         });
-        claim.ownerID = player.getUniqueId();
-        dataStore.saveClaim(claim);
     }
 
     @Override
@@ -100,6 +115,21 @@ public class ClaimController implements IClaimController {
         if (claim.parent != null) {
             claims.add(claim);
         }
+    }
+
+    public Claim getClaim(long id) {
+        return findClaim(dataStore.getClaims(), id);
+    }
+
+    public Claim findClaim(Collection<Claim> claims, long id) {
+        Claim foundClaim = null;
+        for (Claim claim : claims) {
+            System.out.println(claim.getID());
+            if (claim.getID().equals(id)) return claim;
+            foundClaim = findClaim(claim.children, id);
+            if (foundClaim != null) return foundClaim;
+        }
+        return null;
     }
 
     public List<Claim> getSubDivisons(Collection<Claim> claims) {
