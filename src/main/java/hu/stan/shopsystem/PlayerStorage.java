@@ -11,14 +11,13 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Consumer;
 
-public class PlayerStorage implements Listener {
+public class PlayerStorage {
 
     private DreamPlugin plugin;
+    private Map<UUID, PlayerData> playerDataMap = new HashMap<>();
     private File dataFolder;
 
     public PlayerStorage(DreamPlugin plugin) {
@@ -32,7 +31,9 @@ public class PlayerStorage implements Listener {
         this.dataFolder = dataFolder;
     }
 
-    private Map<UUID, PlayerData> playerDataMap = new HashMap<>();
+    public Optional<PlayerData> getPlayerData(Player player) {
+        return getPlayerData(player.getUniqueId());
+    }
 
     public Optional<PlayerData> getPlayerData(UUID playerUUID) {
         Optional<PlayerData> optionalPlayerData = Optional.empty();
@@ -52,6 +53,14 @@ public class PlayerStorage implements Listener {
         return getPlayerData(playerID);
     }
 
+    public void ifExists(Player player, Consumer<PlayerData> action) {
+        Optional<PlayerData> playerDataOpt = getPlayerData(player);
+        if (playerDataOpt.isPresent()) {
+            PlayerData playerData = playerDataOpt.get();
+            action.accept(playerData);
+        }
+    }
+
     public void addPlayerData(PlayerData playerData) {
         playerDataMap.put(playerData.getPlayerUUID(), playerData);
     }
@@ -67,6 +76,10 @@ public class PlayerStorage implements Listener {
     public void savePlayer(PlayerData playerData) throws IOException {
         Gson gson = new Gson();
         gson.toJson(playerData, new FileWriter(new File(dataFolder, playerData.getPlayerUUID() + ".json")));
+    }
+
+    public Collection<PlayerData> getPlayerDatas() {
+        return playerDataMap.values();
     }
 
 }

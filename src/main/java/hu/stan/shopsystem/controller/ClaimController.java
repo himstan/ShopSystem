@@ -1,30 +1,28 @@
 package hu.stan.shopsystem.controller;
 
+import hu.stan.shopsystem.PlayerData;
+import hu.stan.shopsystem.PlayerStorage;
+import hu.stan.shopsystem.ShopClaim;
 import me.ryanhamshire.GriefPrevention.Claim;
 import me.ryanhamshire.GriefPrevention.DataStore;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.PlayerData;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClaimController implements IClaimController {
 
     private DataStore dataStore;
+    private PlayerStorage playerStorage;
 
-    public ClaimController() {
+    public ClaimController(PlayerStorage playerStorage) {
         this.dataStore = GriefPrevention.instance.dataStore;
-
-        for (Claim subClaim : getSubDivisons(dataStore.getClaims())) {
-            if (subClaim.ownerID != null) {
-                PlayerData playerData = dataStore.getPlayerData(subClaim.ownerID);
-                if (!playerData.getClaims().contains(subClaim))
-                    playerData.getClaims().add(subClaim);
-            }
-        }
+        this.playerStorage = playerStorage;
     }
 
     @Override
@@ -35,33 +33,37 @@ public class ClaimController implements IClaimController {
     @Override
     public void removeClaim(Player player, Claim claim) {
         claim.ownerID = null;
-        PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
-        playerData.getClaims().remove(claim);
+        playerStorage.ifExists(player, playerData -> {
+            playerData.removeShopClaim();
+        });
         dataStore.saveClaim(claim);
-        dataStore.savePlayerDataSync(player.getUniqueId(), playerData);
     }
 
     @Override
     public boolean hasClaim(Player player, Claim claim) {
-        PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
-        return claim.ownerID != null && player.getUniqueId().equals(claim.ownerID) && playerData.getClaims().contains(claim);
+        Optional<PlayerData> playerData = playerStorage.getPlayerData(player);
+        boolean playerDataHasClaim = playerData.isPresent() && playerData.get().hasShopClaim() && playerData.get().getShopClaim().getClaim().getID().equals(claim.getID());
+        return claim.ownerID != null && player.getUniqueId().equals(claim.ownerID) && playerDataHasClaim;
     }
 
     @Override
     public int getClaimCount(Player player) {
-        PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
-        return (int) playerData.getClaims().stream().filter(claim -> claim.parent != null).count();
+        AtomicInteger count = new AtomicInteger();
+        playerStorage.ifExists(player, playerData -> {
+            if (playerData.hasShopClaim()) {
+                count.set(1);
+            }
+        });
+        return count.get();
     }
 
     @Override
     public void addClaim(Player player, Claim claim) {
-        PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
-        if (!playerData.getClaims().contains(claim)) {
-            playerData.getClaims().add(claim);
-        }
+        playerStorage.ifExists(player, playerData -> {
+            playerData.setShopClaim(new ShopClaim(player.getUniqueId(), claim.getID()));
+        });
         claim.ownerID = player.getUniqueId();
         dataStore.saveClaim(claim);
-        dataStore.savePlayerDataSync(player.getUniqueId(), playerData);
     }
 
     @Override

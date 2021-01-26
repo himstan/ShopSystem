@@ -26,7 +26,7 @@ public final class ShopSystem extends DreamPlugin {
 
         shopStorage = new ShopStorage();
         playerStorage = new PlayerStorage(this);
-        claimController = new ClaimController();
+        claimController = new ClaimController(playerStorage);
 
         moduleManager = new ModuleManager(this);
         moduleManager.registerModule(new SignHandlerModule(claimController));
